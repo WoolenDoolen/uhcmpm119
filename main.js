@@ -3,8 +3,8 @@
 window.addEventListener("load", () => {
   const config = {
     type: Phaser.AUTO,
-    width: 1280,
-    height: 960,
+    width: 1600,
+    height: 900,
     pixelArt: true,
     physics: {
       default: "arcade",
@@ -33,6 +33,25 @@ const GAME_CONFIG = {
     totemRadius: 96,
     totemDuration: 8000,
     totemRechargeTime: 5000,
+  },
+  accessibility: {
+    colorBlindMode: false,
+    normalColors: {
+      altar: 0xffff00,
+      altarText: "#ffff88",
+      totem: 0x88ffff,
+      ward: 0x88ccff,
+      gameOver: 0xaa0000,
+      victory: 0x006600,
+    },
+    colorBlindColors: {
+      altar: 0x0047ff,
+      altarText: "#9fc0ff",
+      totem: 0xffa500,
+      ward: 0xffd166,
+      gameOver: 0x7a1ea1,
+      victory: 0x1f7a1f,
+    },
   },
   mausoleumMaxHealth: 5,
   waves: [
@@ -88,6 +107,9 @@ class MainScene extends Phaser.Scene {
   }
 
   create() {
+    this.colorBlindMode = GAME_CONFIG.accessibility.colorBlindMode;
+    this.updateAccessibilityColors();
+
     this.createMap();
     this.createPlayer();
     this.createEnemyGroups();
@@ -259,7 +281,13 @@ class MainScene extends Phaser.Scene {
 
     const { x, y } = this.upgradeAltarPos;
 
-    this.altarHighlight = this.add.circle(x, y - 4, 18, 0xffff00, 0.35);
+    this.altarHighlight = this.add.circle(
+      x,
+      y - 4,
+      18,
+      this.currentColors.altar,
+      0.35
+    );
     this.altarHighlight.setDepth(11);
 
     this.tweens.add({
@@ -275,12 +303,48 @@ class MainScene extends Phaser.Scene {
       .text(x, y - 32, "Altar", {
         fontFamily: "sans-serif",
         fontSize: "14px",
-        fill: "#ffff88",
+        fill: this.currentColors.altarText,
         stroke: "#000000",
         strokeThickness: 3,
       })
       .setOrigin(0.5, 0.5)
       .setDepth(12);
+  }
+    updateAccessibilityColors() {
+    this.currentColors = this.colorBlindMode
+      ? GAME_CONFIG.accessibility.colorBlindColors
+      : GAME_CONFIG.accessibility.normalColors;
+  }
+
+  applyAccessibilityMode() {
+    this.updateAccessibilityColors();
+
+    if (this.altarHighlight) {
+      this.altarHighlight.fillColor = this.currentColors.altar;
+    }
+
+    if (this.altarLabel) {
+      this.altarLabel.setStyle({ fill: this.currentColors.altarText });
+    }
+
+    if (this.gameOverOverlay) {
+      this.gameOverOverlay.fillColor = this.currentColors.gameOver;
+    }
+
+    if (this.victoryOverlay) {
+      this.victoryOverlay.fillColor = this.currentColors.victory;
+    }
+  }
+
+  toggleColorBlindMode() {
+    this.colorBlindMode = !this.colorBlindMode;
+    this.applyAccessibilityMode();
+
+    this.showMessage(
+      this.colorBlindMode
+        ? "Color blind mode enabled."
+        : "Color blind mode disabled."
+    );
   }
 
   // --- Player & movement ---------------------------------------
@@ -611,7 +675,6 @@ class MainScene extends Phaser.Scene {
       fill: "#ffffff",
     };
 
-    // Top-left HUD: HP / mausoleum / totems
     this.statusText = this.add
       .text(8, 8, "", style)
       .setScrollFactor(0)
@@ -622,7 +685,6 @@ class MainScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(20);
 
-    // Message at top center with black outline
     this.messageText = this.add
       .text(this.scale.width / 2, 32, "", {
         ...style,
@@ -634,9 +696,8 @@ class MainScene extends Phaser.Scene {
 
     this.messageText.setStroke("#000000", 4);
 
-    // Upgrade overlay
     this.upgradeOverlay = this.add
-      .rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.7)
+      .rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.75)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(30)
@@ -645,19 +706,16 @@ class MainScene extends Phaser.Scene {
     this.upgradeText = this.add
       .text(this.scale.width / 2, this.scale.height / 2, "", {
         fontFamily: "sans-serif",
-        fontSize: "16px",
+        fontSize: "20px",
         fill: "#ffffff",
-        align: "left",
-        stroke: "#000000",
-        strokeThickness: 4,
-        wordWrap: { width: this.scale.width - 120 },
+        align: "center",
+        wordWrap: { width: this.scale.width - 100 },
       })
       .setOrigin(0.5, 0.5)
       .setScrollFactor(0)
       .setDepth(31)
       .setVisible(false);
 
-    // Title overlay
     this.titleOverlay = this.add
       .rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.85)
       .setOrigin(0, 0)
@@ -678,7 +736,6 @@ class MainScene extends Phaser.Scene {
       .setDepth(41)
       .setVisible(false);
 
-    // Pause overlay
     this.pauseOverlay = this.add
       .rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.55)
       .setOrigin(0, 0)
@@ -699,9 +756,15 @@ class MainScene extends Phaser.Scene {
       .setDepth(36)
       .setVisible(false);
 
-    // Game Over overlay (red)
     this.gameOverOverlay = this.add
-      .rectangle(0, 0, this.scale.width, this.scale.height, 0xaa0000, 0.8)
+      .rectangle(
+        0,
+        0,
+        this.scale.width,
+        this.scale.height,
+        this.currentColors.gameOver,
+        0.8
+      )
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(50)
@@ -720,9 +783,15 @@ class MainScene extends Phaser.Scene {
       .setDepth(51)
       .setVisible(false);
 
-    // Victory overlay (green-ish)
     this.victoryOverlay = this.add
-      .rectangle(0, 0, this.scale.width, this.scale.height, 0x006600, 0.8)
+      .rectangle(
+        0,
+        0,
+        this.scale.width,
+        this.scale.height,
+        this.currentColors.victory,
+        0.8
+      )
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(50)
@@ -801,6 +870,7 @@ class MainScene extends Phaser.Scene {
       "Ward Totem (slow field): Shift or Right Mouse",
       "Interact (altar / upgrades): E",
       "Pause: Esc",
+      "Toggle Color Blind Mode: C",
       "",
       "Goal: Survive all shifts and protect the mausoleum.",
       "",
@@ -873,7 +943,7 @@ class MainScene extends Phaser.Scene {
     this.closeUpgradeMenu();
   }
 
-  showPauseMenu() {
+    showPauseMenu() {
     this.pauseOverlay.setVisible(true);
     this.pauseText
       .setText(
@@ -882,6 +952,7 @@ class MainScene extends Phaser.Scene {
           "Ward Attack: Space / Left Mouse\n" +
           "Totem: Shift / Right Mouse\n" +
           "Interact: E at altar\n" +
+          "Toggle Color Blind Mode: C\n" +
           "Pause: Esc\n\n" +
           "Press Esc again to resume."
       )
@@ -909,39 +980,40 @@ class MainScene extends Phaser.Scene {
 
   // --- Input ---------------------------------------------------
 
-  createInput() {
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.keys = this.input.keyboard.addKeys({
-      W: Phaser.Input.Keyboard.KeyCodes.W,
-      A: Phaser.Input.Keyboard.KeyCodes.A,
-      S: Phaser.Input.Keyboard.KeyCodes.S,
-      D: Phaser.Input.Keyboard.KeyCodes.D,
-      SPACE: Phaser.Input.Keyboard.KeyCodes.SPACE,
-      SHIFT: Phaser.Input.Keyboard.KeyCodes.SHIFT,
-      E: Phaser.Input.Keyboard.KeyCodes.E,
-      ONE: Phaser.Input.Keyboard.KeyCodes.ONE,
-      TWO: Phaser.Input.Keyboard.KeyCodes.TWO,
-      THREE: Phaser.Input.Keyboard.KeyCodes.THREE,
-      R: Phaser.Input.Keyboard.KeyCodes.R,
-      ENTER: Phaser.Input.Keyboard.KeyCodes.ENTER,
-      ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
-    });
+    createInput() {
+      this.cursors = this.input.keyboard.createCursorKeys();
+      this.keys = this.input.keyboard.addKeys({
+        W: Phaser.Input.Keyboard.KeyCodes.W,
+        A: Phaser.Input.Keyboard.KeyCodes.A,
+        S: Phaser.Input.Keyboard.KeyCodes.S,
+        D: Phaser.Input.Keyboard.KeyCodes.D,
+        SPACE: Phaser.Input.Keyboard.KeyCodes.SPACE,
+        SHIFT: Phaser.Input.Keyboard.KeyCodes.SHIFT,
+        E: Phaser.Input.Keyboard.KeyCodes.E,
+        ONE: Phaser.Input.Keyboard.KeyCodes.ONE,
+        TWO: Phaser.Input.Keyboard.KeyCodes.TWO,
+        THREE: Phaser.Input.Keyboard.KeyCodes.THREE,
+        C: Phaser.Input.Keyboard.KeyCodes.C,
+        R: Phaser.Input.Keyboard.KeyCodes.R,
+        ENTER: Phaser.Input.Keyboard.KeyCodes.ENTER,
+        ESC: Phaser.Input.Keyboard.KeyCodes.ESC,
+      });
 
-    this.input.on("pointerdown", (pointer) => {
-      if (
-        this.gamePhase === "wave" ||
-        this.gamePhase === "intro" ||
-        this.gamePhase === "ready" ||
-        this.gamePhase === "awaitingUpgrade"
-      ) {
-        if (pointer.leftButtonDown()) {
-          this.tryWardAttack();
-        } else if (pointer.rightButtonDown()) {
-          this.tryPlaceTotem();
+      this.input.on("pointerdown", (pointer) => {
+        if (
+          this.gamePhase === "wave" ||
+          this.gamePhase === "intro" ||
+          this.gamePhase === "ready" ||
+          this.gamePhase === "awaitingUpgrade"
+        ) {
+          if (pointer.leftButtonDown()) {
+            this.tryWardAttack();
+          } else if (pointer.rightButtonDown()) {
+            this.tryPlaceTotem();
+          }
         }
-      }
-    });
-  }
+      });
+    }
 
   // --- Attacks & totems ----------------------------------------
 
@@ -972,7 +1044,7 @@ class MainScene extends Phaser.Scene {
 
   showWardEffect() {
     const graphics = this.add.graphics({ x: this.player.x, y: this.player.y });
-    graphics.fillStyle(0x88ccff, 0.4);
+    graphics.fillStyle(this.currentColors.ward, 0.4);
 
     const angle = this.getDirectionAngle();
     const startAngle =
@@ -1038,44 +1110,41 @@ class MainScene extends Phaser.Scene {
     }, this);
   }
 
-  tryPlaceTotem() {
-    if (!this.canUseAbilities()) return;
-    if (this.totemCharges <= 0) return;
+    tryPlaceTotem() {
+      if (!this.canUseAbilities()) return;
+      if (this.totemCharges <= 0) return;
 
-    this.totemCharges -= 1;
-    this.updateUI();
-
-    // SFX
-    if (this.sfxTotem) this.sfxTotem.play();
-
-    const circle = this.add.circle(
-      this.player.x,
-      this.player.y,
-      18,
-      0x88ffff,
-      0.8
-    );
-    circle.setDepth(4);
-    circle.createdAt = this.time.now;
-    circle.expiresAt = circle.createdAt + this.playerStats.totemDuration;
-    this.totems.push(circle);
-
-    // Expire
-    this.time.delayedCall(this.playerStats.totemDuration, () => {
-      const idx = this.totems.indexOf(circle);
-      if (idx !== -1) this.totems.splice(idx, 1);
-      circle.destroy();
-    });
-
-    // Recharge this charge
-    this.time.delayedCall(this.playerStats.totemRechargeTime, () => {
-      this.totemCharges = Math.min(
-        this.playerStats.maxTotems,
-        this.totemCharges + 1
-      );
+      this.totemCharges -= 1;
       this.updateUI();
-    });
-  }
+
+      if (this.sfxTotem) this.sfxTotem.play();
+
+      const circle = this.add.circle(
+        this.player.x,
+        this.player.y,
+        18,
+        this.currentColors.totem,
+        0.8
+      );
+      circle.setDepth(4);
+      circle.createdAt = this.time.now;
+      circle.expiresAt = circle.createdAt + this.playerStats.totemDuration;
+      this.totems.push(circle);
+
+      this.time.delayedCall(this.playerStats.totemDuration, () => {
+        const idx = this.totems.indexOf(circle);
+        if (idx !== -1) this.totems.splice(idx, 1);
+        circle.destroy();
+      });
+
+      this.time.delayedCall(this.playerStats.totemRechargeTime, () => {
+        this.totemCharges = Math.min(
+          this.playerStats.maxTotems,
+          this.totemCharges + 1
+        );
+        this.updateUI();
+      });
+    }
 
   // --- Waves / state machine -----------------------------------
 
@@ -1153,6 +1222,9 @@ class MainScene extends Phaser.Scene {
       this.togglePause();
     }
     if (this.isPaused) return;
+    if (Phaser.Input.Keyboard.JustDown(this.keys.C)) {
+    this.toggleColorBlindMode();
+    }
 
     // Interaction (E) at altar
     if (Phaser.Input.Keyboard.JustDown(this.keys.E) && this.isNearAltar()) {
