@@ -387,7 +387,7 @@ class MainScene extends Phaser.Scene {
     this.altarLabel = this.add
       .text(x, y - 38, "ALTAR", {
         fontFamily: "sans-serif",
-        fontSize: "14px",
+        fontSize: "18px",
         fill: this.currentColors.altarText,
         stroke: "#000000",
         strokeThickness: 4,
@@ -878,7 +878,7 @@ class MainScene extends Phaser.Scene {
   createUI() {
     const style = {
       fontFamily: "sans-serif",
-      fontSize: "14px",
+      fontSize: "18px",
       fill: "#ffffff",
     };
 
