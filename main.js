@@ -35,22 +35,92 @@ const GAME_CONFIG = {
     totemRechargeTime: 5000,
   },
   accessibility: {
-    colorBlindMode: false,
-    normalColors: {
-      altar: 0xffff00,
-      altarText: "#ffff88",
-      totem: 0x88ffff,
-      ward: 0x88ccff,
-      gameOver: 0xaa0000,
-      victory: 0x006600,
-    },
-    colorBlindColors: {
-      altar: 0x0047ff,
-      altarText: "#9fc0ff",
-      totem: 0xffa500,
-      ward: 0xffd166,
-      gameOver: 0x7a1ea1,
-      victory: 0x1f7a1f,
+    mode: "normal",
+    modes: {
+      normal: {
+        label: "Normal",
+        colors: {
+          altar: 0xffee58,
+          altarText: "#fff7a8",
+          totem: 0x5be7ff,
+          totemRing: 0xffffff,
+          ward: 0x64c8ff,
+          wardOutline: 0xffffff,
+          gameOver: 0xaa0000,
+          victory: 0x006600,
+          hudAccent: "#ffffff",
+        },
+        tints: {
+          world: 0xffffff,
+          player: 0xffffff,
+          ghost: 0xffffff,
+          skeleton: 0xffffff,
+          boss: 0xffffff,
+        },
+        visuals: {
+          overlayColor: 0xffffff,
+          overlayAlpha: 0,
+          hudPanelColor: 0x000000,
+          hudPanelAlpha: 0.42,
+          canvasFilter: "brightness(108%) saturate(108%)",
+        },
+      },
+      highContrast: {
+        label: "High Contrast",
+        colors: {
+          altar: 0xfff36a,
+          altarText: "#ffffff",
+          totem: 0x00f5ff,
+          totemRing: 0xffffff,
+          ward: 0xff8a00,
+          wardOutline: 0xffffff,
+          gameOver: 0x5b0017,
+          victory: 0x003b2f,
+          hudAccent: "#ffffff",
+        },
+        tints: {
+          world: 0xffffff,
+          player: 0xffffff,
+          ghost: 0x58f4ff,
+          skeleton: 0xfff36a,
+          boss: 0xff6b6b,
+        },
+        visuals: {
+          overlayColor: 0xffffff,
+          overlayAlpha: 0,
+          hudPanelColor: 0x000000,
+          hudPanelAlpha: 0.62,
+          canvasFilter: "brightness(112%) contrast(130%) saturate(118%)",
+        },
+      },
+      grayscale: {
+        label: "Grayscale",
+        colors: {
+          altar: 0xffffff,
+          altarText: "#ffffff",
+          totem: 0xd8d8d8,
+          totemRing: 0xffffff,
+          ward: 0xebebeb,
+          wardOutline: 0xffffff,
+          gameOver: 0x2b2b2b,
+          victory: 0x4a4a4a,
+          hudAccent: "#ffffff",
+        },
+        tints: {
+          world: 0xffffff,
+          player: 0xffffff,
+          ghost: 0xffffff,
+          skeleton: 0xffffff,
+          boss: 0xffffff,
+        },
+        visuals: {
+          overlayColor: 0xffffff,
+          overlayAlpha: 0,
+          hudPanelColor: 0x000000,
+          hudPanelAlpha: 0.64,
+          canvasFilter: "grayscale(100%) contrast(120%) brightness(112%)",
+        },
+      },
     },
   },
   mausoleumMaxHealth: 5,
@@ -107,7 +177,7 @@ class MainScene extends Phaser.Scene {
   }
 
   create() {
-    this.colorBlindMode = GAME_CONFIG.accessibility.colorBlindMode;
+    this.accessibilityMode = GAME_CONFIG.accessibility.mode;
     this.updateAccessibilityColors();
 
     this.createMap();
@@ -153,6 +223,7 @@ class MainScene extends Phaser.Scene {
     this.playerDirection = "down";
     this.invincibleUntil = 0;
 
+    this.applyAccessibilityMode();
     this.updateUI();
     this.showTitleScreen();
   }
@@ -284,47 +355,171 @@ class MainScene extends Phaser.Scene {
     this.altarHighlight = this.add.circle(
       x,
       y - 4,
-      18,
+      20,
       this.currentColors.altar,
-      0.35
+      0.22
     );
     this.altarHighlight.setDepth(11);
 
+    this.altarRing = this.add.circle(x, y - 4, 24);
+    this.altarRing.setDepth(12);
+    this.altarRing.setStrokeStyle(3, this.currentColors.altar, 0.9);
+
+    this.altarDiamond = this.add.rectangle(
+      x,
+      y - 4,
+      12,
+      12,
+      this.currentColors.altar,
+      0.95
+    );
+    this.altarDiamond.setAngle(45).setDepth(13);
+
     this.tweens.add({
-      targets: this.altarHighlight,
-      scale: { from: 1, to: 1.4 },
-      alpha: { from: 0.2, to: 0.7 },
+      targets: [this.altarHighlight, this.altarRing, this.altarDiamond],
+      scale: { from: 1, to: 1.18 },
+      alpha: { from: 0.35, to: 0.95 },
       duration: 700,
       yoyo: true,
       repeat: -1,
     });
 
     this.altarLabel = this.add
-      .text(x, y - 32, "Altar", {
+      .text(x, y - 38, "ALTAR", {
         fontFamily: "sans-serif",
         fontSize: "14px",
         fill: this.currentColors.altarText,
         stroke: "#000000",
-        strokeThickness: 3,
+        strokeThickness: 4,
+        fontStyle: "bold",
       })
       .setOrigin(0.5, 0.5)
-      .setDepth(12);
+      .setDepth(14);
   }
-    updateAccessibilityColors() {
-    this.currentColors = this.colorBlindMode
-      ? GAME_CONFIG.accessibility.colorBlindColors
-      : GAME_CONFIG.accessibility.normalColors;
+
+  getAccessibilitySettings() {
+    return (
+      GAME_CONFIG.accessibility.modes[this.accessibilityMode] ||
+      GAME_CONFIG.accessibility.modes.normal
+    );
+  }
+
+  getAccessibilityModeLabel() {
+    return this.getAccessibilitySettings().label;
+  }
+
+  updateAccessibilityColors() {
+    const settings = this.getAccessibilitySettings();
+    this.currentAccessibility = settings;
+    this.currentColors = settings.colors;
+    this.currentVisuals = settings.visuals || {};
+  }
+
+  applyTintToGameObject(gameObject, tint = 0xffffff) {
+    if (!gameObject) return;
+    if (gameObject.setTint) {
+      gameObject.setTint(tint);
+    } else if (gameObject.clearTint && tint === 0xffffff) {
+      gameObject.clearTint();
+    }
+  }
+
+  applyCanvasVisualMode() {
+    const filter = this.currentVisuals.canvasFilter || "none";
+    if (this.game && this.game.canvas) {
+      this.game.canvas.style.filter = filter;
+      this.game.canvas.style.imageRendering = "pixelated";
+    }
+  }
+
+  applyWorldVisualMode() {
+    const tints = this.currentAccessibility.tints;
+
+    [this.groundLayer, this.wallsLayer, this.decoLayer].forEach((layer) => {
+      if (!layer) return;
+      this.applyTintToGameObject(layer, tints.world);
+    });
+
+    if (this.player) {
+      this.applyTintToGameObject(this.player, tints.player);
+    }
+
+    if (this.enemiesGroup) {
+      this.enemiesGroup.children.each((enemy) => {
+        if (!enemy) return;
+        this.styleEnemyForAccessibility(enemy);
+      });
+    }
+  }
+
+  styleEnemyForAccessibility(enemy) {
+    if (!enemy) return;
+    const tints = this.currentAccessibility.tints;
+    const tint = tints[enemy.type] || 0xffffff;
+    this.applyTintToGameObject(enemy, tint);
+  }
+
+  styleTotemForAccessibility(totem) {
+    if (!totem) return;
+    const ring = totem.getByName ? totem.getByName("ring") : null;
+    const core = totem.getByName ? totem.getByName("core") : null;
+    const crossH = totem.getByName ? totem.getByName("cross-h") : null;
+    const crossV = totem.getByName ? totem.getByName("cross-v") : null;
+
+    if (ring && ring.setStrokeStyle) {
+      ring.setStrokeStyle(3, this.currentColors.totemRing, 0.7);
+    }
+    if (core) {
+      core.fillColor = this.currentColors.totem;
+    }
+    if (crossH) {
+      crossH.fillColor = this.currentColors.totemRing;
+    }
+    if (crossV) {
+      crossV.fillColor = this.currentColors.totemRing;
+    }
   }
 
   applyAccessibilityMode() {
     this.updateAccessibilityColors();
 
+    if (this.worldModeOverlay) {
+      this.worldModeOverlay.fillColor =
+        this.currentVisuals.overlayColor ?? 0xffffff;
+      this.worldModeOverlay.setAlpha(this.currentVisuals.overlayAlpha ?? 0);
+    }
+
+    if (this.hudPanel) {
+      this.hudPanel.fillColor = this.currentVisuals.hudPanelColor ?? 0x000000;
+      this.hudPanel.setAlpha(this.currentVisuals.hudPanelAlpha ?? 0.45);
+    }
+
     if (this.altarHighlight) {
       this.altarHighlight.fillColor = this.currentColors.altar;
     }
 
+    if (this.altarRing) {
+      this.altarRing.setStrokeStyle(3, this.currentColors.altar, 0.9);
+    }
+
+    if (this.altarDiamond) {
+      this.altarDiamond.fillColor = this.currentColors.altar;
+    }
+
     if (this.altarLabel) {
       this.altarLabel.setStyle({ fill: this.currentColors.altarText });
+    }
+
+    if (this.statusText) {
+      this.statusText.setStyle({ fill: this.currentColors.hudAccent });
+    }
+
+    if (this.waveText) {
+      this.waveText.setStyle({ fill: this.currentColors.hudAccent });
+    }
+
+    if (this.accessibilityText) {
+      this.accessibilityText.setStyle({ fill: this.currentColors.hudAccent });
     }
 
     if (this.gameOverOverlay) {
@@ -334,16 +529,25 @@ class MainScene extends Phaser.Scene {
     if (this.victoryOverlay) {
       this.victoryOverlay.fillColor = this.currentColors.victory;
     }
+
+    if (this.totems && this.totems.length) {
+      this.totems.forEach((totem) => this.styleTotemForAccessibility(totem));
+    }
+
+    this.applyCanvasVisualMode();
+    this.applyWorldVisualMode();
+    this.updateUI();
   }
 
-  toggleColorBlindMode() {
-    this.colorBlindMode = !this.colorBlindMode;
+  cycleAccessibilityMode() {
+    const modes = Object.keys(GAME_CONFIG.accessibility.modes);
+    const index = modes.indexOf(this.accessibilityMode);
+    this.accessibilityMode = modes[(index + 1) % modes.length];
     this.applyAccessibilityMode();
 
-    this.showMessage(
-      this.colorBlindMode
-        ? "Color blind mode enabled."
-        : "Color blind mode disabled."
+    this.showAnnouncement(
+      `Accessibility view: ${this.getAccessibilityModeLabel()}`,
+      1100
     );
   }
 
@@ -371,6 +575,7 @@ class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.player, this.wallsLayer);
     this.physics.add.collider(this.player, this.decoLayer);
+    this.applyWorldVisualMode();
   }
 
   createPlayerAnimations() {
@@ -455,6 +660,7 @@ class MainScene extends Phaser.Scene {
     enemy.setCollideWorldBounds(true);
     enemy.setDepth(9 + (type === "boss" ? 1 : 0));
     enemy.isBoss = type === "boss";
+    this.styleEnemyForAccessibility(enemy);
 
     if (type === "boss") {
       enemy.setDisplaySize(48, 48);
@@ -625,8 +831,9 @@ class MainScene extends Phaser.Scene {
       this.currentWaveIndex < GAME_CONFIG.waves.length
     ) {
       this.gamePhase = "awaitingUpgrade";
+      this.showAnnouncement("Wave cleared! Upgrade time.", 1800);
       this.showMessage(
-        "Wave cleared! Return to the altar and press E to choose an upgrade."
+        "Return to the altar and press E to choose an upgrade."
       );
     }
   }
@@ -675,26 +882,79 @@ class MainScene extends Phaser.Scene {
       fill: "#ffffff",
     };
 
+    this.worldModeOverlay = this.add
+      .rectangle(0, 0, this.scale.width, this.scale.height, 0xffffff, 0)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(15);
+
+    this.hudPanel = this.add
+      .rectangle(4, 4, 530, 74, 0x000000, 0.45)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(19);
+
     this.statusText = this.add
-      .text(8, 8, "", style)
+      .text(12, 10, "", style)
       .setScrollFactor(0)
       .setDepth(20);
 
     this.waveText = this.add
-      .text(8, 28, "", style)
+      .text(12, 32, "", style)
       .setScrollFactor(0)
       .setDepth(20);
+
+    this.accessibilityText = this.add
+      .text(12, 54, "", {
+        ...style,
+        fill: this.currentColors.hudAccent,
+      })
+      .setScrollFactor(0)
+      .setDepth(20);
+
+    this.messagePanel = this.add
+      .rectangle(this.scale.width / 2, this.scale.height - 42, 980, 56, 0x000000, 0.58)
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setDepth(19)
+      .setVisible(false);
 
     this.messageText = this.add
-      .text(this.scale.width / 2, 32, "", {
+      .text(this.scale.width / 2, this.scale.height - 42, "", {
         ...style,
-        fontSize: "18px",
+        fontSize: "19px",
+        align: "center",
+        wordWrap: { width: 980 },
       })
-      .setOrigin(0.5, 0)
+      .setOrigin(0.5, 0.5)
       .setScrollFactor(0)
-      .setDepth(20);
+      .setDepth(20)
+      .setVisible(false);
 
     this.messageText.setStroke("#000000", 4);
+
+    this.announcementPanel = this.add
+      .rectangle(this.scale.width / 2, this.scale.height / 2, 860, 92, 0x000000, 0.72)
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setDepth(25)
+      .setVisible(false);
+
+    this.announcementText = this.add
+      .text(this.scale.width / 2, this.scale.height / 2, "", {
+        fontFamily: "sans-serif",
+        fontSize: "28px",
+        fill: "#ffffff",
+        align: "center",
+        fontStyle: "bold",
+        wordWrap: { width: 780 },
+      })
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0)
+      .setDepth(26)
+      .setVisible(false);
+
+    this.announcementText.setStroke("#000000", 6);
 
     this.upgradeOverlay = this.add
       .rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.75)
@@ -826,38 +1086,103 @@ class MainScene extends Phaser.Scene {
           "/" +
           this.totalWaves;
     this.waveText.setText(waveDisplay);
+
+    if (this.accessibilityText) {
+      this.accessibilityText.setText(
+        `View: ${this.getAccessibilityModeLabel()} (press C)`
+      );
+    }
   }
 
   showIntroPrompt() {
     const text =
       "Walk to the glowing altar and press E to start your first shift.";
 
-    // start big in the center
+    this.messagePanel.setVisible(false);
+    this.messageText.setVisible(true);
     this.messageText.setText(text);
     this.messageText.setFontSize(28);
     this.messageText.setOrigin(0.5, 0.5);
     this.messageText.setPosition(this.scale.width / 2, this.scale.height / 2);
     this.messageText.setAlpha(1);
-    this.messageText.setScale(1.4);
+    this.messageText.setScale(1.18);
 
-    // tween up to the normal HUD position at the top
     this.tweens.add({
       targets: this.messageText,
-      y: 32,
+      y: this.scale.height - 42,
       scale: 1,
       duration: 900,
       ease: "Cubic.easeOut",
       onComplete: () => {
-        // lock it into its usual top-center style
-        this.messageText.setOrigin(0.5, 0);
-        this.messageText.setFontSize(18);
-        this.messageText.setPosition(this.scale.width / 2, 32);
+        this.messageText.setOrigin(0.5, 0.5);
+        this.messageText.setFontSize(19);
+        this.messageText.setPosition(this.scale.width / 2, this.scale.height - 42);
+        this.showMessage(text);
       },
     });
   }
 
   showMessage(text) {
     this.messageText.setText(text);
+    const visible = Boolean(text);
+    this.messagePanel.setVisible(visible);
+    this.messageText.setVisible(visible);
+
+    if (!visible) return;
+
+    const panelY = this.scale.height - 42;
+    const panelWidth = Phaser.Math.Clamp(this.messageText.width + 90, 420, 1120);
+    const panelHeight = Phaser.Math.Clamp(this.messageText.height + 26, 54, 110);
+
+    this.messagePanel.width = panelWidth;
+    this.messagePanel.height = panelHeight;
+    this.messagePanel.setPosition(this.scale.width / 2, panelY);
+    this.messageText.setPosition(this.scale.width / 2, panelY);
+  }
+
+  showAnnouncement(text, duration = 1700) {
+    if (!text) return;
+
+    if (this.announcementTween) {
+      this.announcementTween.remove();
+      this.announcementTween = null;
+    }
+    if (this.announcementTimer) {
+      this.announcementTimer.remove(false);
+      this.announcementTimer = null;
+    }
+
+    this.announcementText
+      .setText(text)
+      .setAlpha(1)
+      .setScale(1)
+      .setVisible(true)
+      .setPosition(this.scale.width / 2, this.scale.height / 2);
+    this.announcementPanel
+      .setAlpha(0.78)
+      .setVisible(true)
+      .setPosition(this.scale.width / 2, this.scale.height / 2);
+
+    const width = Phaser.Math.Clamp(this.announcementText.width + 80, 360, 980);
+    const height = Phaser.Math.Clamp(this.announcementText.height + 44, 88, 220);
+    this.announcementPanel.width = width;
+    this.announcementPanel.height = height;
+
+    this.announcementTimer = this.time.delayedCall(duration, () => {
+      this.announcementTween = this.tweens.add({
+        targets: [this.announcementPanel, this.announcementText],
+        alpha: 0,
+        duration: 220,
+        onComplete: () => {
+          this.announcementPanel.setVisible(false);
+          this.announcementText.setVisible(false);
+          this.announcementPanel.setAlpha(0.78);
+          this.announcementText.setAlpha(1);
+          this.announcementTween = null;
+        },
+      });
+      this.announcementTimer = null;
+    });
   }
 
   showTitleScreen() {
@@ -870,7 +1195,8 @@ class MainScene extends Phaser.Scene {
       "Ward Totem (slow field): Shift or Right Mouse",
       "Interact (altar / upgrades): E",
       "Pause: Esc",
-      "Toggle Color Blind Mode: C",
+      "Cycle Accessibility View: C",
+      "Modes: Normal / High Contrast / Grayscale",
       "",
       "Goal: Survive all shifts and protect the mausoleum.",
       "",
@@ -914,6 +1240,7 @@ class MainScene extends Phaser.Scene {
     this.upgradeText.setVisible(false);
     this.physics.world.resume();
     this.gamePhase = "ready";
+    this.showAnnouncement("Ready for the next shift.", 1400);
     this.showMessage(
       "Press E at the altar when you are ready for the next shift."
     );
@@ -1044,7 +1371,8 @@ class MainScene extends Phaser.Scene {
 
   showWardEffect() {
     const graphics = this.add.graphics({ x: this.player.x, y: this.player.y });
-    graphics.fillStyle(this.currentColors.ward, 0.4);
+    graphics.lineStyle(3, this.currentColors.wardOutline, 0.95);
+    graphics.fillStyle(this.currentColors.ward, 0.38);
 
     const angle = this.getDirectionAngle();
     const startAngle =
@@ -1061,6 +1389,15 @@ class MainScene extends Phaser.Scene {
       false
     );
     graphics.fillPath();
+    graphics.strokePath();
+    graphics.lineBetween(0, 0,
+      Math.cos(startAngle) * this.playerStats.wardRange,
+      Math.sin(startAngle) * this.playerStats.wardRange
+    );
+    graphics.lineBetween(0, 0,
+      Math.cos(endAngle) * this.playerStats.wardRange,
+      Math.sin(endAngle) * this.playerStats.wardRange
+    );
     graphics.setDepth(5);
 
     this.tweens.add({
@@ -1119,22 +1456,40 @@ class MainScene extends Phaser.Scene {
 
       if (this.sfxTotem) this.sfxTotem.play();
 
-      const circle = this.add.circle(
-        this.player.x,
-        this.player.y,
-        18,
-        this.currentColors.totem,
-        0.8
+      const ring = this.add.circle(
+        0,
+        0,
+        this.playerStats.totemRadius
       );
-      circle.setDepth(4);
-      circle.createdAt = this.time.now;
-      circle.expiresAt = circle.createdAt + this.playerStats.totemDuration;
-      this.totems.push(circle);
+      ring.name = "ring";
+      ring.setStrokeStyle(3, this.currentColors.totemRing, 0.7);
+
+      const core = this.add.circle(0, 0, 18, this.currentColors.totem, 0.88);
+      core.name = "core";
+
+      const crossH = this.add.rectangle(0, 0, 22, 4, this.currentColors.totemRing, 0.95);
+      crossH.name = "cross-h";
+      const crossV = this.add.rectangle(0, 0, 4, 22, this.currentColors.totemRing, 0.95);
+      crossV.name = "cross-v";
+
+      const totem = this.add.container(this.player.x, this.player.y, [ring, core, crossH, crossV]);
+      totem.setDepth(4);
+      totem.createdAt = this.time.now;
+      totem.expiresAt = totem.createdAt + this.playerStats.totemDuration;
+      this.totems.push(totem);
+
+      this.tweens.add({
+        targets: ring,
+        alpha: { from: 0.35, to: 0.85 },
+        duration: 650,
+        yoyo: true,
+        repeat: -1,
+      });
 
       this.time.delayedCall(this.playerStats.totemDuration, () => {
-        const idx = this.totems.indexOf(circle);
+        const idx = this.totems.indexOf(totem);
         if (idx !== -1) this.totems.splice(idx, 1);
-        circle.destroy();
+        totem.destroy();
       });
 
       this.time.delayedCall(this.playerStats.totemRechargeTime, () => {
@@ -1170,14 +1525,13 @@ class MainScene extends Phaser.Scene {
     if (this.currentWaveIndex < GAME_CONFIG.waves.length) {
       const cfg = GAME_CONFIG.waves[this.currentWaveIndex];
       this.spawnWave(cfg.ghosts, cfg.skeletons);
-      this.showMessage(
-        "Wave " +
-          (this.currentWaveIndex + 1) +
-          " has begun. Protect the mausoleum!"
-      );
+      const waveNumber = this.currentWaveIndex + 1;
+      this.showAnnouncement(`Wave ${waveNumber} has begun!`, 1600);
+      this.showMessage("Protect the mausoleum!");
     } else if (this.currentWaveIndex === GAME_CONFIG.waves.length) {
       this.spawnBossWave();
-      this.showMessage("Final wave! The boss spirit has appeared.");
+      this.showAnnouncement("Final wave! Boss incoming!", 1800);
+      this.showMessage("The boss spirit has appeared.");
     } else {
       return;
     }
@@ -1223,7 +1577,7 @@ class MainScene extends Phaser.Scene {
     }
     if (this.isPaused) return;
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) {
-    this.toggleColorBlindMode();
+      this.cycleAccessibilityMode();
     }
 
     // Interaction (E) at altar
