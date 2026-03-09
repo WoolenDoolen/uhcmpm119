@@ -10,6 +10,7 @@
 
 - **Todd Crandell** — game system design, implementation of top-down movement, level design, art selection & integration.
 - **Arvin Arbabi** — game system design, waves, upgrades, UI, and colorblind mode.
+- **Arda Barnar** — game system design, UI, quality assurance.
 
 ---
 
@@ -97,4 +98,5 @@ The center-top text is used for short guidance messages (wave start, upgrades, e
 - The pause overlay shows controls and instructions. Press **Esc** again to resume.
 
 ---
+
 
